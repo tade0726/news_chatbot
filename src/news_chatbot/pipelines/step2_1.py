@@ -28,7 +28,6 @@ MODEL_NAME = "categories-and-summary-pipeline"
 MODEL_VERSION = "v0.1"
 
 # API configuration
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Database configuration
