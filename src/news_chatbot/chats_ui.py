@@ -476,12 +476,12 @@ if __name__ == "__main__":
                         article_info = {
                             "source": node.metadata.get("source", "Unknown Source"),
                             "content": node.text,
-                            "title": node.metadata.get("title", ""),
                             "publishedAt": node.metadata.get("publishedAt", ""),
                             "url": node.metadata.get("url", ""),
                             "topic": node.metadata.get("topic", ""),
                             "sentiment": node.metadata.get("sentiment", ""),
-                            "id": node.metadata.get("id", ""),
+                            "repeated_count": node.metadata.get("duplicate_count", 0),
+                            "keywords": node.metadata.get("keywords", ""),
                         }
                         context.append(article_info)
 

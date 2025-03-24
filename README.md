@@ -223,6 +223,17 @@ The pipeline consists of several key steps:
    - Uses SentenceTransformer to compute similarity between articles and topic keywords
    - Creates separate ranked datasets for each news category
    - Stores results in category-specific tables in DuckDB
+   
+   **How Importance Ranking Works:**
+   - Each news category (sports, lifestyle, music, finance) has a set of predefined keywords that represent what's important in that domain (e.g., "athlete", "tournament", "score" for sports)
+   - Keywords for each category are combined into a single text string (e.g., "athlete tournament score breaking news")
+   - Both the combined article content (headline + summary) and the category keyword strings are converted into vector embeddings using SentenceTransformer
+   - Cosine similarity is calculated between each article's embedding and each category's keyword embedding
+   - Articles receive a similarity score for each category, measuring how well they align with the importance criteria
+   - The final importance ranking combines two factors using Reciprocal Rank Fusion (RRF):
+     1. Frequency rank: How often the article appears across sources (duplicate count)
+     2. Semantic relevance: How closely the article matches the category's importance keywords
+   - This approach balances popularity metrics with content relevance to identify truly important news
 
 7. **UI Metadata Generation (Step 4)**
    - Curates and formats article data for UI presentation
