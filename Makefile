@@ -37,3 +37,7 @@ step5:
 streamlit:
 	make format
 	uv run streamlit run src/news_chatbot/chats_ui.py
+
+
+zenml-register:
+	uv run zenml login

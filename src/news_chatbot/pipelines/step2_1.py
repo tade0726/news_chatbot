@@ -9,6 +9,7 @@ Features:
 # Standard libraries
 import os
 from datetime import datetime
+import asyncio
 
 # Third-party libraries
 import pandas as pd
@@ -17,12 +18,12 @@ from zenml import Model, step, pipeline
 import json
 from news_chatbot.llm import (
     process_article_content,
-    process_batch_of_items,
+    process_article_embedding,
+    process_items_with_semaphore,
     SYSTEM_PROMPT,
 )
 from news_chatbot.datasets import DuckdbDataset
-from openai import OpenAI
-import time
+from openai import AsyncOpenAI
 
 # Model configuration
 MODEL_NAME = "categories-and-summary-pipeline"
@@ -38,7 +39,10 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH")
 TMP_FOLDER = os.getenv("TMP_FOLDER")
 
 # Concurrency settings
-BATCH_SIZE = 20  # Adjust based on OpenAI rate limits
+BATCH_SIZE = 50  # Adjust based on OpenAI rate limits
+
+# INPUT_NUM
+INPUT_NUM = -1
 
 
 @step
@@ -77,7 +81,7 @@ def clean_data(batch_query_time: int) -> pd.DataFrame:
     )
     dataset2.write_data()
 
-    return df
+    return df[:INPUT_NUM] if INPUT_NUM > 0 else df
 
 
 @step
@@ -93,7 +97,7 @@ def categories_and_summary(df: pd.DataFrame, batch_query_time: int) -> pd.DataFr
         DataFrame with added categories, summaries, and other enrichments
     """
     # Initialize OpenAI client
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
     # Create new columns for the enriched data
     df["categories"] = None
@@ -112,24 +116,34 @@ def categories_and_summary(df: pd.DataFrame, batch_query_time: int) -> pd.DataFr
     # Process articles in batches
     all_results = {}
 
-    # Split items into batches
-    item_ids = list(content_items.keys())
-    for i in range(0, len(item_ids), BATCH_SIZE):
-        batch_ids = item_ids[i : i + BATCH_SIZE]
-        batch_items = {item_id: content_items[item_id] for item_id in batch_ids}
+    # Define async function to process all batches
+    async def process_all_batches():
+        nonlocal all_results
+        # Split items into batches
+        item_ids = list(content_items.keys())
+        for i in range(0, len(item_ids), BATCH_SIZE):
+            batch_ids = item_ids[i : i + BATCH_SIZE]
+            batch_items = {item_id: content_items[item_id] for item_id in batch_ids}
 
-        # Process the batch
-        batch_results = process_batch_of_items(
-            batch_items, process_article_content, client, system_prompt=SYSTEM_PROMPT
-        )
-        all_results.update(batch_results)
-
-        # Add a delay between batches to avoid rate limiting
-        if i + BATCH_SIZE < len(item_ids):
-            print(
-                f"Processed batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
+            # Process the batch
+            batch_results = await process_items_with_semaphore(
+                batch_items,
+                process_article_content,
+                client,
+                system_prompt=SYSTEM_PROMPT,
+                max_concurrency=5,
             )
-            time.sleep(1)
+            all_results.update(batch_results)
+
+            # Add a delay between batches to avoid rate limiting
+            if i + BATCH_SIZE < len(item_ids):
+                print(
+                    f"Processed batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
+                )
+                await asyncio.sleep(1)
+
+    # Run the async function
+    asyncio.run(process_all_batches())
 
     # Update the DataFrame with the results
     for idx_str, result in all_results.items():
@@ -157,7 +171,7 @@ def embeddings(df: pd.DataFrame, batch_query_time: int) -> pd.DataFrame:
         DataFrame with added embedding column
     """
     # Initialize OpenAI client
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
     # Create new column for embeddings
     df["title_embedding"] = None
@@ -172,24 +186,30 @@ def embeddings(df: pd.DataFrame, batch_query_time: int) -> pd.DataFrame:
     # Process titles in batches
     all_results = {}
 
-    # Split items into batches
-    item_ids = list(title_items.keys())
-    for i in range(0, len(item_ids), BATCH_SIZE):
-        batch_ids = item_ids[i : i + BATCH_SIZE]
-        batch_items = {item_id: title_items[item_id] for item_id in batch_ids}
+    # Define async function to process all batches
+    async def process_all_embeddings():
+        nonlocal all_results
+        # Split items into batches
+        item_ids = list(title_items.keys())
+        for i in range(0, len(item_ids), BATCH_SIZE):
+            batch_ids = item_ids[i : i + BATCH_SIZE]
+            batch_items = {item_id: title_items[item_id] for item_id in batch_ids}
 
-        # Process the batch
-        batch_results = process_batch_of_items(
-            batch_items, process_article_embedding, client
-        )
-        all_results.update(batch_results)
-
-        # Add a delay between batches to avoid rate limiting
-        if i + BATCH_SIZE < len(item_ids):
-            print(
-                f"Processed embeddings batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
+            # Process the batch
+            batch_results = await process_items_with_semaphore(
+                batch_items, process_article_embedding, client, max_concurrency=10
             )
-            time.sleep(1)
+            all_results.update(batch_results)
+
+            # Add a delay between batches to avoid rate limiting
+            if i + BATCH_SIZE < len(item_ids):
+                print(
+                    f"Processed embeddings batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
+                )
+                await asyncio.sleep(1)
+
+    # Run the async function
+    asyncio.run(process_all_embeddings())
 
     # Update the DataFrame with the results
     for idx_str, embedding in all_results.items():

@@ -188,7 +188,7 @@ The pipeline consists of several key steps:
      - Key entities
      - Sentiment analysis
      - Alternative headlines
-   - Processes articles in batches to manage API rate limits
+   - Processes requests in async to improve performance
 
 3. **Semantic Deduplication (Step 2.2)**
    - Implements k-nearest neighbors (KNN) algorithm using FAISS (Facebook AI Similarity Search) for efficient similarity search
