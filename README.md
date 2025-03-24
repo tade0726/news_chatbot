@@ -180,11 +180,15 @@ The pipeline consists of several key steps:
    - Stores raw data in DuckDB database
    - Implements pagination to handle API limits
 
-2. **Data Cleaning (Step 2.1)**
-   - Processes raw news data
-   - Standardizes date formats
-   - Removes duplicates
-   - Assigns unique IDs to articles
+2. **Content Enrichment (Step 2.1)**
+   - Uses OpenAI API to generate:
+     - Categories (sports, lifestyle, music, finance)
+     - Detailed summaries
+     - Keywords
+     - Key entities
+     - Sentiment analysis
+     - Alternative headlines
+   - Processes articles in batches to manage API rate limits
 
 3. **Semantic Deduplication (Step 2.2)**
    - Implements k-nearest neighbors (KNN) algorithm using FAISS (Facebook AI Similarity Search) for efficient similarity search
@@ -202,22 +206,7 @@ The pipeline consists of several key steps:
      - Provides frequency metrics that indicate the importance/popularity of news events
      - Maintains the most representative version of each news story
 
-4. **Content Enrichment (Step 2.1)**
-   - Uses OpenAI API to generate:
-     - Categories (sports, lifestyle, music, finance)
-     - Detailed summaries
-     - Keywords
-     - Key entities
-     - Sentiment analysis
-     - Alternative headlines
-   - Processes articles in batches to manage API rate limits
-
-5. **Embedding Generation (Step 2.1)**
-   - Creates vector embeddings for article titles using OpenAI's embedding API
-   - Enables semantic search capabilities
-   - Processes in batches with rate limiting
-
-6. **News Importance Ranking (Step 3)**
+4. **News Importance Ranking (Step 3)**
    - Implements Reciprocal Rank Fusion (RRF) to score article importance
    - Combines frequency metrics (duplicate count) with keyword relevance
    - Uses SentenceTransformer to compute similarity between articles and topic keywords
@@ -235,7 +224,7 @@ The pipeline consists of several key steps:
      2. Semantic relevance: How closely the article matches the category's importance keywords
    - This approach balances popularity metrics with content relevance to identify truly important news
 
-7. **UI Metadata Generation (Step 4)**
+5. **UI Metadata Generation (Step 4)**
    - Curates and formats article data for UI presentation
    - Selects top-ranked articles (based on RRF score) for each category
    - Normalizes source and author information
@@ -244,7 +233,7 @@ The pipeline consists of several key steps:
      - A complete dataset with all processed articles for comprehensive access
    - Exports data to Parquet files for efficient storage and retrieval
 
-8. **Vector Index Building (Step 5)**
+6. **Vector Index Building (Step 5)**
    - Creates searchable vector index using LlamaIndex and Qdrant
    - Implements hybrid search capabilities (dense and sparse vectors)
    - Processes documents with:
