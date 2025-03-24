@@ -108,6 +108,7 @@ def build_index(
                 "rrf_rank": row["rrf_rank"],
                 "sentiment": row["sentiment"],
                 "topic": row["topic"],
+                "publishedAt": row["publishedAt"].strftime("%Y-%m-%d %H:%M:%S %z"),
             },
         )
         for _, row in df.iterrows()

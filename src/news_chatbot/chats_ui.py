@@ -10,6 +10,10 @@ from openai import OpenAI
 from qdrant_client import QdrantClient
 
 import pandas as pd
+import torch
+
+
+torch.classes.__path__ = []  # add this line to manually set it to empty.
 
 
 # config
@@ -45,6 +49,7 @@ Instructions for Response:
 6. Maintain a helpful, informative, and engaging tone
 7. When appropriate, highlight key facts, figures, or quotes from the articles
 8. ALWAYS include source attribution and article metadata in your responses
+9. ALWAYS include the publication date of articles when referencing information
 
 Acceptable Topics (Based on Provided Context):
 - Sports: Australian teams, athletes, competitions, and sporting events
@@ -58,10 +63,11 @@ For each response:
 3. If the question cannot be fully answered with the provided context, clearly state this
 4. Organize information logically with appropriate headings when needed
 5. Provide balanced coverage when multiple perspectives are present in the articles
+6. ALWAYS include the date when referencing information from an article
 
 Reference Format:
-1. When citing information in your response, use inline citations with the source name in parentheses:
-   Example: "The Australian cricket team won the match by 5 wickets (ABC News)"
+1. When citing information in your response, use inline citations with the source name and date in parentheses:
+   Example: "The Australian cricket team won the match by 5 wickets (ABC News, 15 March 2023)"
 
 2. ALWAYS include a "Sources" section at the end of your response with this format:
    
@@ -136,7 +142,13 @@ def rephrase_query_function(client: OpenAI, query: str) -> str:
     
     Focus on extracting key entities, events, or concepts related to these categories: ["sports", "lifestyle", "music", "finance"].
     
-    If the question is vague, make it more specific while preserving the original intent.
+    If the question is vague but mentions or implies one of these categories, expand it to a more general query about that category.
+    For example:
+    - "sports" -> "What are the latest sports news and events in Australia?"
+    - "music" -> "What are the recent developments in Australian music scene?"
+    - "finance" -> "What are the current financial trends and news in Australia?"
+    - "lifestyle" -> "What are the latest lifestyle trends and news in Australia?"
+    
     If the question contains slang or colloquial terms, replace them with more formal terminology.
     
     The rephrased query should be concise, use relevant keywords, and be formatted as a clear question or search term.
@@ -159,10 +171,10 @@ def intetion_recognition_function(client: OpenAI, query: str) -> tuple:
 
     try:
         intention_prompt = """
-        Analyze the query and determine if it STRICTLY relates to Australian news articles in the categories of sports, lifestyle, music, or finance.
+        Analyze the query and determine if it STRICTLY relates to news articles in the categories of sports, lifestyle, music, or finance.
 
         APPROVED INTENTIONS:
-        - Questions about news articles, events, or factual information related to Australian sports, lifestyle, music, or finance
+        - Questions about news articles, events, or factual information related to sports, lifestyle, music, or finance
         - Requests for summaries, analyses, or explanations of news content
         - Queries about trends, statistics, or developments covered in news articles
 
@@ -176,7 +188,7 @@ def intetion_recognition_function(client: OpenAI, query: str) -> tuple:
         
         Response Format:
         {
-            "intention": boolean,  // true ONLY if the query is genuinely about Australian news content
+            "intention": boolean,  // true ONLY if the query is genuinely about news content
             "reason": "Specific reason for classification based on above criteria",
             "category": string  // One of: "sports", "lifestyle", "music", "finance", or "general" if valid but doesn't fit a specific category
         }
@@ -317,143 +329,189 @@ if __name__ == "__main__":
 
     # Add introduction/header
     st.title("Australia News Chatbot!")
-    st.markdown(
+
+    # Initialize the active tab in session state if not already present
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = 0
+
+    # Create two tabs for parallel pages
+    tab1, tab2 = st.tabs(["Chat with News Assistant", "News Highlights"])
+
+    # Tab 1: Chatbot interaction
+    with tab1:
+        # Instructions for using the chatbot
+        st.markdown(
+            """
+        ## How to Use This Chatbot
+        
+        1. **Ask questions** about Australian news in these categories:
+           - Sports: Teams, athletes, competitions, events
+           - Lifestyle: Trends, health, wellness, food, travel
+           - Music: Artists, concerts, festivals, album releases
+           - Finance: Markets, economy, business, investments
+           
+        2. **Examples of questions** you can ask:
+           - "What's happening in Australian cricket?"
+           - "Tell me about recent music festivals in Australia"
+           - "What are the latest financial trends in Australia?"
+           - "Any news about lifestyle changes in Australia?"
+           - Or simply type a category like "sports" or "music" for general updates
+           
+        3. **Get specific** for better results - include names, dates, or topics of interest
+        
+        This chatbot uses AI to analyze and retrieve information from recent Australian news articles.
         """
-    Highlights of Australia News:
-    
-    ## How to Use This Chatbot
-    
-    1. **Ask questions** about Australian news in these categories:
-       - Sports: Teams, athletes, competitions, events
-       - Lifestyle: Trends, health, wellness, food, travel
-       - Music: Artists, concerts, festivals, album releases
-       - Finance: Markets, economy, business, investments
-       
-    2. **Examples of questions** you can ask:
-       - "What's happening in Australian cricket?"
-       - "Tell me about recent music festivals in Australia"
-       - "What are the latest financial trends in Australia?"
-       - "Any news about lifestyle changes in Australia?"
-       
-    3. **Get specific** for better results - include names, dates, or topics of interest
-    
-    This chatbot uses AI to analyze and retrieve information from recent Australian news articles.
-    """
-    )
-    st.markdown(read_highlights())
+        )
 
-    if "openai_model" not in st.session_state:
-        st.session_state["openai_model"] = LLM_MODEL
+        # Display news highlights in a smaller, collapsible section
+        with st.expander("View Latest News Highlights", expanded=False):
+            st.markdown(read_highlights())
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+        if "openai_model" not in st.session_state:
+            st.session_state["openai_model"] = LLM_MODEL
 
-    if "interaction_count" not in st.session_state:
-        st.session_state.interaction_count = 0
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        if "interaction_count" not in st.session_state:
+            st.session_state.interaction_count = 0
 
-    if query := st.chat_input("Your message"):
-        logger.debug(f"Query: {query}")
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-        # Increment interaction counter and show feedback reminder
-        st.session_state.interaction_count += 1
+        # Set active tab to Chat when user starts typing
+        if query := st.chat_input("Your message"):
+            # Set active tab to Chat (tab 1)
+            st.session_state.active_tab = 0
 
-        # Check query intention
-        intention_result = intetion_recognition_function(client, query)
-        intention = intention_result[0]
-        category = intention_result[1]
+            logger.debug(f"Query: {query}")
 
-        if not intention:
-            with st.chat_message("user"):
-                st.markdown(query)
+            # Increment interaction counter and show feedback reminder
+            st.session_state.interaction_count += 1
 
-            with st.chat_message("assistant"):
-                message = """
-                📰 **Query Outside News Scope**
+            # Check query intention
+            intention_result = intetion_recognition_function(client, query)
+            intention = intention_result[0]
+            category = intention_result[1]
 
-                Your query doesn't appear to relate to Australian news articles in our supported categories:
-                - Sports (teams, athletes, competitions)
-                - Lifestyle (trends, health, food, travel)
-                - Music (artists, concerts, festivals)
-                - Finance (markets, economy, business)
+            if not intention:
+                with st.chat_message("user"):
+                    st.markdown(query)
 
-                **Try asking about:**
-                - "What's the latest in Australian cricket?"
-                - "Tell me about recent music festivals in Australia"
-                - "What are the current trends in Australian finance?"
-                - "Any news about lifestyle changes in Australia?"
+                with st.chat_message("assistant"):
+                    message = """
+                    📰 **Query Outside News Scope**
 
-                Please reformulate your question to focus on Australian news content.
-                """
-                st.warning(message)
-        else:
-            # Add the message to the chat history
-            st.session_state.messages.append({"role": "user", "content": query})
+                    Your query doesn't appear to relate to Australian news articles in our supported categories:
+                    - Sports (teams, athletes, competitions)
+                    - Lifestyle (trends, health, food, travel)
+                    - Music (artists, concerts, festivals)
+                    - Finance (markets, economy, business)
 
-            # Display the user message in the chat
-            with st.chat_message("user"):
-                st.markdown(query)
+                    **Try asking about:**
+                    - "What's the latest in Australian cricket?"
+                    - "Tell me about recent music festivals in Australia"
+                    - "What are the current trends in Australian finance?"
+                    - "Any news about lifestyle changes in Australia?"
 
-            # Display the assistant message in the chat
-            with st.chat_message("assistant"):
-                message_placeholder = st.empty()
+                    Please reformulate your question to focus on Australian news content.
+                    """
+                    st.warning(message)
+            else:
+                # Add the message to the chat history
+                st.session_state.messages.append({"role": "user", "content": query})
 
-                # Log the category of the query
-                logger.info(f"Query category: {category}")
+                # Display the user message in the chat
+                with st.chat_message("user"):
+                    st.markdown(query)
 
-                # Rephrase the query for better search results
-                rephrased_query = rephrase_query_function(client, query)
-                logger.debug(f"Rephrased query: {rephrased_query}")
+                # Display the assistant message in the chat
+                with st.chat_message("assistant"):
+                    message_placeholder = st.empty()
 
-                # Retrieve relevant nodes based on the rephrased query
-                nodes = retrieve_relevant_nodes(rephrased_query, index, category)
+                    # Log the category of the query
+                    logger.info(f"Query category: {category}")
 
-                # Generate final response with enhanced metadata
-                context = []
-                for node in nodes:
-                    article_info = {
-                        "source": node.metadata.get("source", "Unknown Source"),
-                        "content": node.text,
-                        "title": node.metadata.get("title", ""),
-                        "publishedAt": node.metadata.get("publishedAt", ""),
-                        "url": node.metadata.get("url", ""),
-                        "topic": node.metadata.get("topic", ""),
-                        "sentiment": node.metadata.get("sentiment", ""),
-                        "id": node.metadata.get("id", ""),
-                    }
-                    context.append(article_info)
+                    # Rephrase the query for better search results
+                    rephrased_query = rephrase_query_function(client, query)
+                    logger.debug(f"Rephrased query: {rephrased_query}")
 
-                logger.debug(f"Context: {context}")
+                    # Retrieve relevant nodes based on the rephrased query
+                    nodes = retrieve_relevant_nodes(rephrased_query, index, category)
 
-                # Get the prompt template
-                prompt_template = initialize_prompt()
+                    # Generate final response with enhanced metadata
+                    context = []
+                    for node in nodes:
+                        article_info = {
+                            "source": node.metadata.get("source", "Unknown Source"),
+                            "content": node.text,
+                            "title": node.metadata.get("title", ""),
+                            "publishedAt": node.metadata.get("publishedAt", ""),
+                            "url": node.metadata.get("url", ""),
+                            "topic": node.metadata.get("topic", ""),
+                            "sentiment": node.metadata.get("sentiment", ""),
+                            "id": node.metadata.get("id", ""),
+                        }
+                        context.append(article_info)
 
-                # Format the prompt with context and rephrased_query
-                formatted_prompt = prompt_template.format(
-                    context_str=json.dumps(context, indent=2), query_str=rephrased_query
-                )
+                    logger.debug(f"Context: {context}")
 
-                logger.debug(f"Formatted prompt: {formatted_prompt}")
+                    # Get the prompt template
+                    prompt_template = initialize_prompt()
 
-                with st.spinner("Generating response..."):
+                    # Format the prompt with context and rephrased_query
+                    formatted_prompt = prompt_template.format(
+                        context_str=json.dumps(context, indent=2),
+                        query_str=rephrased_query,
+                    )
+
+                    logger.debug(f"Formatted prompt: {formatted_prompt}")
+
+                    with st.spinner("Generating response..."):
+                        st.session_state.messages.append(
+                            {"role": "user", "content": rephrased_query}
+                        )
+                        stream = client.chat.completions.create(
+                            model=st.session_state["openai_model"],
+                            messages=[{"role": "system", "content": SYSTEM_PROMPT}]
+                            + [
+                                {"role": m["role"], "content": m["content"]}
+                                for m in st.session_state.messages
+                            ]
+                            + [{"role": "user", "content": formatted_prompt}],
+                            stream=True,
+                        )
+
+                    response = st.write_stream(stream)
                     st.session_state.messages.append(
-                        {"role": "user", "content": rephrased_query}
-                    )
-                    stream = client.chat.completions.create(
-                        model=st.session_state["openai_model"],
-                        messages=[{"role": "system", "content": SYSTEM_PROMPT}]
-                        + [
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state.messages
-                        ]
-                        + [{"role": "user", "content": formatted_prompt}],
-                        stream=True,
+                        {"role": "assistant", "content": response}
                     )
 
-                response = st.write_stream(stream)
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": response}
-                )
+    # Tab 2: News Highlights
+    with tab2:
+        st.markdown(read_highlights())
+        # Add a button to switch to chat tab
+        if st.button("Switch to Chat"):
+            st.session_state.active_tab = 0
+            st.experimental_rerun()
+
+    # Use the active tab from session state to control which tab is shown
+    if st.session_state.active_tab == 0:
+        # This JavaScript will click on the first tab
+        js = """
+        <script>
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            async function clickTab() {
+                await sleep(100);  // Small delay to ensure DOM is ready
+                const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                if (tabs.length >= 2) {
+                    tabs[0].click();
+                }
+            }
+            clickTab();
+        </script>
+        """
+        st.components.v1.html(js, height=0)
