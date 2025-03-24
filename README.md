@@ -1,10 +1,175 @@
-
-
 ##  News Chatbot Pipeline & UI Documentation
 
 ### Overview
 
 The News Chatbot is a comprehensive system that processes news articles using OpenAI's API to generate categories, summaries, and embeddings. It uses ZenML for pipeline management and DuckDB for data storage. The system provides a chat interface for users to query and interact with the processed news data.
+
+### Technology Stack Selection
+
+The project leverages several key technologies chosen for their specific strengths:
+
+1. **ZenML**
+   - Selected for creating reproducible data science pipelines
+   - Provides versioning for models and pipeline steps
+   - Enables tracking of pipeline runs and metadata
+   - Facilitates easy experimentation with different pipeline configurations
+   - Supports caching of intermediate results for faster iteration
+   - Ensures reproducibility across different environments
+
+2. **DuckDB**
+   - Chosen for its simplicity and portability
+   - Stores data as a single file that can be easily shared within the repository
+   - Provides SQL capabilities with minimal setup
+   - Offers excellent performance for analytical queries
+   - Requires no separate database server installation
+   - Supports direct integration with pandas DataFrames
+
+3. **OpenAI API**
+   - Powers the natural language understanding components
+   - Generates high-quality summaries and categorizations
+   - Creates embeddings for semantic search capabilities
+
+4. **Qdrant**
+   - Vector database optimized for similarity search
+   - Supports hybrid search combining dense and sparse vectors
+   - Enables efficient retrieval of relevant news articles
+
+5. **Streamlit**
+   - Provides a simple yet powerful framework for building the UI
+   - Enables rapid development of interactive web applications
+   - Integrates well with Python data science tools
+
+### Environment Setup
+
+Before running the project, you need to set up the required environment variables:
+
+1. **Create Environment File**:
+   - Copy the provided `.env.sample` file to a new file named `.env`
+   - Update the values with your own API keys and configuration
+
+   ```bash
+   cp .env.sample .env
+   ```
+
+2. **Required API Keys**:
+   - **OpenAI API Key**: Required for content processing and embeddings
+   - **NewsAPI Key**: Required for fetching news articles
+   - **Tavily API Key**: Used for additional search capabilities (optional)
+   - **Qdrant API Key**: If using a secured Qdrant instance
+
+3. **File Paths**:
+   - Update the file paths in the `.env` file to match your local setup:
+     - `DUCKDB_PATH`: Path to the DuckDB database file
+     - `TMP_FOLDER`: Directory for temporary files
+     - `DATA_FOLDER`: Directory for storing processed data
+
+4. **Service URLs**:
+   - Ensure the ZenML and Qdrant URLs match your Docker Compose configuration
+   - Default values should work if using the provided docker-compose.yml
+
+Example `.env` file structure:
+```
+# API Keys
+TAVILY_API_KEY="your_tavily_api_key_here"
+OPENAI_API_KEY="your_openai_api_key_here"
+NEWSAPI_KEY="your_newsapi_key_here"
+
+# File paths
+DUCKDB_PATH="./duckdb/duckdb.db"
+TMP_FOLDER="./tmp"
+DATA_FOLDER="./src/news_chatbot/data"
+
+# ZenML configuration
+OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+ZENML_SERVER_URL=http://127.0.0.1:8080
+
+# Qdrant configuration
+QDRANT_URI=http://127.0.0.1:6333
+QDRANT_COLLECTION_NAME="build-index-pipeline-v1"
+QDRANT_API_KEY="your_qdrant_api_key_here"
+```
+
+### Project Structure and Development Environment
+
+The project follows a modular structure for maintainability and scalability:
+
+```
+news_chatbot/
+├── .env                  # Environment variables configuration
+├── .env.sample           # Template for environment variables
+├── .streamlit/           # Streamlit configuration
+├── Makefile              # Commands for running pipelines and services
+├── README.md             # Project documentation
+├── docker-compose.yml    # Local development environment setup
+├── docs/                 # Additional documentation
+├── duckdb/               # DuckDB database files
+├── pyproject.toml        # Project dependencies and metadata
+├── src/                  # Source code
+│   └── news_chatbot/     # Main package
+│       ├── __init__.py
+│       ├── chats_ui.py   # Streamlit chat interface
+│       ├── data/         # Processed data storage
+│       ├── datasets/     # Data handling modules
+│       ├── llm/          # LLM integration components
+│       └── pipelines/    # ZenML pipeline implementations
+│           ├── step1.py  # Data acquisition
+│           ├── step2_1.py # Data cleaning and enrichment
+│           ├── step2_2.py # Additional processing
+│           ├── step3.py  # News importance ranking
+│           ├── step4.py  # UI metadata generation
+│           └── step5.py  # Vector index building
+└── tmp/                  # Temporary files
+```
+
+#### Development Environment Setup
+
+The project uses Docker Compose to create a consistent local development environment:
+
+1. **Services Included**:
+   - **MySQL**: Database for ZenML metadata storage
+   - **ZenML Server**: Pipeline orchestration and tracking
+   - **Qdrant**: Vector database for similarity search
+
+2. **Getting Started**:
+   ```bash
+   # Start all services
+   make up
+   
+   # Stop services
+   make stop
+   
+   # Remove containers
+   make down
+   ```
+
+#### Pipeline Execution
+
+The Makefile provides commands to run each pipeline step in the correct order:
+
+```bash
+# Run data acquisition pipeline
+make step1
+
+# Run data cleaning and enrichment pipeline
+make step2_1
+
+# Run additional processing
+make step2_2
+
+# Run news importance ranking
+make step3
+
+# Run UI metadata generation
+make step4
+
+# Run vector index building
+make step5
+
+# Start the Streamlit UI
+make streamlit
+```
+
+The pipelines should be run in sequence as each step depends on the output of the previous steps. The Makefile simplifies this process by providing standardized commands for each operation.
 
 ### Pipeline Architecture
 
