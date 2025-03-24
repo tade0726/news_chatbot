@@ -29,3 +29,7 @@ step3:
 
 step4:
 	uv run src/news_chatbot/pipelines/step4.py
+
+step5:
+	uv run src/news_chatbot/pipelines/step5.py
+	

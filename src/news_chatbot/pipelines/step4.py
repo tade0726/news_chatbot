@@ -25,7 +25,7 @@ MODEL_NAME = "news-ui-metadata-pipeline"
 MODEL_VERSION = "v0.1"
 
 
-# TMP folder
+# data folder
 DATA_FOLDER = os.getenv("DATA_FOLDER")
 
 
@@ -47,8 +47,6 @@ def metadata(batch_query_time: int) -> pd.DataFrame:
         ]
 
         df2 = df[columns]
-
-        df2 = df2[df2["rrf_rank"] <= 15]
 
         df2.loc[:, "source"] = df2["source"].apply(lambda x: x["name"])
 
@@ -72,9 +70,12 @@ def metadata(batch_query_time: int) -> pd.DataFrame:
 
     df_res.reset_index(drop=True, inplace=True)
 
-    df_res.to_parquet(f"{DATA_FOLDER}/news_ui_metadata.parquet")
+    df_ui_news = df_res[df_res["rrf_rank"] <= 15]
 
-    return df_res
+    df_ui_news.to_parquet(f"{DATA_FOLDER}/news_ui_metadata.parquet")
+    df_res.to_parquet(f"{DATA_FOLDER}/news_metadata.parquet")
+
+    return df_ui_news
 
 
 # Create model metadata for tracking

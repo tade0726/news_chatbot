@@ -69,6 +69,9 @@ def high_importance(batch_query_time: int) -> Dict[str, pd.DataFrame]:
         lambda x: x.replace("[", "").replace('"', "").replace("]", "").split(",")
     )
 
+    # combine headlines + summary
+    df.loc[:, "combined_text"] = df["headline"] + "\n\n" + df["summary"]
+
     # define keywords for different categories
     # Each topic is represented by 3 core keywords + 'breaking news'
     topic_keywords = {
@@ -82,17 +85,17 @@ def high_importance(batch_query_time: int) -> Dict[str, pd.DataFrame]:
     model = SentenceTransformer("all-MiniLM-L6-v2")
 
     # Embed all titles
-    content_embeddings = model.encode(df["content"], convert_to_numpy=True)
+    combined_text_embeddings = model.encode(df["combined_text"], convert_to_numpy=True)
 
     # Create 1 embedding per topic by joining keywords into a string
     topic_texts = [" ".join(words) for words in topic_keywords.values()]
     topic_embeddings = model.encode(topic_texts, convert_to_numpy=True)
 
-    content_embeddings = normalize(content_embeddings)
+    combined_text_embeddings = normalize(combined_text_embeddings)
     topic_embeddings = normalize(topic_embeddings)
 
     # Create similarity matrix
-    similarity_matrix = np.matmul(content_embeddings, topic_embeddings.T)
+    similarity_matrix = np.matmul(combined_text_embeddings, topic_embeddings.T)
     df.loc[
         :,
         [
