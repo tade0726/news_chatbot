@@ -17,5 +17,8 @@ freeze:
 	uv pip freeze > requirements.txt
 
 
-query_news:
-	uv run src/news_chatbot/pipelines/search_news.py
+step1:
+	uv run src/news_chatbot/pipelines/step1.py
+
+step2:
+	uv run src/news_chatbot/pipelines/step2_1.py

@@ -17,9 +17,14 @@
 
 
 
-
-
 - need simple place to store the news
 - need a pipeline to ingest and aggregate news
   - create one event and linked sources (deduplicate)
   - 
+
+
+
+
+## TODOLIST
+
+- STEP 1: clean up bad data

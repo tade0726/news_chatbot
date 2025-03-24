@@ -12,3 +12,6 @@ wheels/
 
 #
 .env
+
+# Temporary files
+/tmp

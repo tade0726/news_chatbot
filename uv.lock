@@ -1815,10 +1815,10 @@ dependencies = [
     { name = "jupyter" },
     { name = "llama-index" },
     { name = "llama-index-vector-stores-qdrant" },
+    { name = "newsapi-python" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "streamlit" },
-    { name = "tavily-python" },
     { name = "transformers", extra = ["torch"] },
     { name = "zenml" },
 ]
@@ -1830,12 +1830,24 @@ requires-dist = [
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "llama-index", specifier = ">=0.10.45.post1" },
     { name = "llama-index-vector-stores-qdrant", specifier = ">=0.2.17" },
+    { name = "newsapi-python", specifier = ">=0.2.7" },
     { name = "numpy", specifier = ">=2.1.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "streamlit", specifier = ">=1.40.0" },
-    { name = "tavily-python", specifier = ">=0.5.1" },
     { name = "transformers", extras = ["torch"], specifier = ">=4.47.0" },
     { name = "zenml", specifier = "==0.80.0" },
+]
+
+[[package]]
+name = "newsapi-python"
+version = "0.2.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f8/4b/12fb9495211fc5a6d3a96968759c1a48444124a1654aaf65d0de80b46794/newsapi-python-0.2.7.tar.gz", hash = "sha256:a4b66d5dd9892198cdaa476f7542f2625cdd218e5e3121c8f880b2ace717a3c2", size = 7485 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/74/47/e3b099102f0c826d37841d2266e19f1568dcf58ba86e4c6948e2a124f91d/newsapi_python-0.2.7-py2.py3-none-any.whl", hash = "sha256:11d34013a24d92ca7b7cbdac84ed2d504862b1e22467bc2a9a6913a70962318e", size = 7942 },
 ]
 
 [[package]]
@@ -2984,20 +2996,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/99/5a5b6f19ff9f083671ddf7b9632028436167cd3d33e11015754e41b249a4/sympy-1.13.1.tar.gz", hash = "sha256:9cebf7e04ff162015ce31c9c6c9144daa34a93bd082f54fd8f12deca4f47515f", size = 7533040 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/fe/81695a1aa331a842b582453b605175f419fe8540355886031328089d840a/sympy-1.13.1-py3-none-any.whl", hash = "sha256:db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8", size = 6189177 },
-]
-
-[[package]]
-name = "tavily-python"
-version = "0.5.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "requests" },
-    { name = "tiktoken" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/db/ff/ba1a3769c34d022aeba544ff7b18cbcd0d23a6358fc3566b2101c6bf2817/tavily_python-0.5.1.tar.gz", hash = "sha256:44b0eefe79a057cd11d3cd03780b63b4913400122350e38285acfb502c2fffc1", size = 107503 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/cd/71088461d7720128c78802289b3b36298f42745e5f8c334b0ffc157b881e/tavily_python-0.5.1-py3-none-any.whl", hash = "sha256:169601f703c55cf338758dcacfa7102473b479a9271d65a3af6fc3668990f757", size = 43767 },
 ]
 
 [[package]]
