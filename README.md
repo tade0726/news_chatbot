@@ -186,7 +186,23 @@ The pipeline consists of several key steps:
    - Removes duplicates
    - Assigns unique IDs to articles
 
-3. **Content Enrichment (Step 2.1)**
+3. **Semantic Deduplication (Step 2.2)**
+   - Implements k-nearest neighbors (KNN) algorithm using FAISS (Facebook AI Similarity Search) for efficient similarity search
+   - Utilizes title embeddings to identify semantically similar news articles
+   - Process:
+     - Builds a FAISS index with title embeddings (vector representations of titles)
+     - Performs KNN search to find the top 5 most similar titles for each article
+     - Applies a similarity threshold (0.9) to identify near-duplicates
+     - Keeps only one representative article from each cluster of similar articles
+     - Tracks the number of duplicates for each unique article as `duplicate_count`
+     - This count represents the frequency of reporting for the same event across sources
+   - Benefits:
+     - Identifies semantically equivalent titles even with different wording
+     - Reduces redundancy in the news feed while preserving diversity
+     - Provides frequency metrics that indicate the importance/popularity of news events
+     - Maintains the most representative version of each news story
+
+4. **Content Enrichment (Step 2.1)**
    - Uses OpenAI API to generate:
      - Categories (sports, lifestyle, music, finance)
      - Detailed summaries
@@ -196,19 +212,19 @@ The pipeline consists of several key steps:
      - Alternative headlines
    - Processes articles in batches to manage API rate limits
 
-4. **Embedding Generation (Step 2.1)**
+5. **Embedding Generation (Step 2.1)**
    - Creates vector embeddings for article titles using OpenAI's embedding API
    - Enables semantic search capabilities
    - Processes in batches with rate limiting
 
-5. **News Importance Ranking (Step 3)**
+6. **News Importance Ranking (Step 3)**
    - Implements Reciprocal Rank Fusion (RRF) to score article importance
    - Combines frequency metrics (duplicate count) with keyword relevance
    - Uses SentenceTransformer to compute similarity between articles and topic keywords
    - Creates separate ranked datasets for each news category
    - Stores results in category-specific tables in DuckDB
 
-6. **UI Metadata Generation (Step 4)**
+7. **UI Metadata Generation (Step 4)**
    - Curates and formats article data for UI presentation
    - Selects top-ranked articles (based on RRF score) for each category
    - Normalizes source and author information
@@ -217,7 +233,7 @@ The pipeline consists of several key steps:
      - A complete dataset with all processed articles for comprehensive access
    - Exports data to Parquet files for efficient storage and retrieval
 
-7. **Vector Index Building (Step 5)**
+8. **Vector Index Building (Step 5)**
    - Creates searchable vector index using LlamaIndex and Qdrant
    - Implements hybrid search capabilities (dense and sparse vectors)
    - Processes documents with:

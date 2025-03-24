@@ -308,6 +308,10 @@ def read_highlights() -> str:
                 f"*Sentiment: {sentiment_emoji} {row['sentiment'].capitalize()}*\n\n"
             )
 
+            # Add duplicate count to indicate frequency of the same event being reported
+            if "duplicate_count" in row and row["duplicate_count"] > 1:
+                markdown += f"*Frequency: 🔄 This event has been reported {row['duplicate_count']} times*\n\n"
+
             # Article summary
             markdown += f"{row['summary']}\n\n"
 
