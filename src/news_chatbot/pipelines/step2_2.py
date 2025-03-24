@@ -1,7 +1,6 @@
 # Standard libraries
 import os
 from datetime import datetime
-from typing import List, Dict, Any
 
 # Third-party libraries
 import pandas as pd

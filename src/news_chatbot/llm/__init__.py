@@ -1,7 +1,7 @@
 from openai import OpenAI
 import json
 from typing import Dict, Any, List
-
+import time
 
 ## SYSTEM PROMPT
 SYSTEM_PROMPT = """
@@ -113,7 +113,9 @@ def process_article_embedding(client: OpenAI, title: str) -> List[float]:
         return None
 
 
-def process_batch_of_items(items_to_process, process_func, client: OpenAI, **kwargs):
+def process_batch_of_items(
+    items_to_process, process_func, client: OpenAI, system_prompt: str, **kwargs
+):
     """
     Process a batch of items using the provided function.
 
@@ -121,6 +123,7 @@ def process_batch_of_items(items_to_process, process_func, client: OpenAI, **kwa
         items_to_process: List of items to process
         process_func: Function to call for each item
         client: OpenAI client
+        system_prompt: System prompt for the process function
         **kwargs: Additional arguments to pass to process_func
 
     Returns:
@@ -129,7 +132,7 @@ def process_batch_of_items(items_to_process, process_func, client: OpenAI, **kwa
     results = {}
 
     for item_id, item_data in items_to_process.items():
-        result = process_func(client=client, **item_data)
+        result = process_func(client=client, system_prompt=system_prompt, **item_data)
         results[item_id] = result
 
         # Add a small delay to avoid rate limiting

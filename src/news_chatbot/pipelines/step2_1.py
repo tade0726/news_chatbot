@@ -9,15 +9,20 @@ Features:
 # Standard libraries
 import os
 from datetime import datetime
-from typing import List, Dict, Any
 
 # Third-party libraries
 import pandas as pd
 from zenml import Model, step, pipeline
 
 import json
-from news_chatbot.llm import process_article_content, SYSTEM_PROMPT
-
+from news_chatbot.llm import (
+    process_article_content,
+    process_batch_of_items,
+    SYSTEM_PROMPT,
+)
+from news_chatbot.datasets import DuckdbDataset
+from openai import OpenAI
+import time
 
 # Model configuration
 MODEL_NAME = "categories-and-summary-pipeline"
