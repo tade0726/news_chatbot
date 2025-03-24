@@ -1,7 +1,8 @@
 """
 How to rank the importance of the news in each category
-- frequency of the article 
-- keywords
+- frequency of the article (duplicate_count)
+- keywords that represent the importance of each category
+- Reciprocal Rank Fusion (RRF): combine the frequency and keywords to rank the importance of the news
 """
 
 # Standard libraries
@@ -121,12 +122,16 @@ def high_importance(batch_query_time: int) -> Dict[str, pd.DataFrame]:
             ascending=False, method="min"
         )
 
+        df_topic.loc[:, "batch_query_time"] = batch_query_time
+
         dfs[t] = df_topic
 
     # store each dataframe to its own table
 
     for t, df_topic in dfs.items():
-        dataset = DuckdbDataset(DUCKDB_PATH, df=df_topic, table_name=f"{t}_news", overwrite=True)
+        dataset = DuckdbDataset(
+            DUCKDB_PATH, df=df_topic, table_name=f"{t}_news", overwrite=True
+        )
         dataset.write_data()
 
     return dfs

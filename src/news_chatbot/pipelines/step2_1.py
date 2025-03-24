@@ -38,7 +38,7 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH")
 TMP_FOLDER = os.getenv("TMP_FOLDER")
 
 # Concurrency settings
-BATCH_SIZE = 10  # Adjust based on OpenAI rate limits
+BATCH_SIZE = 20  # Adjust based on OpenAI rate limits
 
 
 @step

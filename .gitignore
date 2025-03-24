@@ -15,3 +15,10 @@ wheels/
 
 # Temporary files
 /tmp
+
+
+# notebooks
+/src/news_chatbot/notebooks/*
+
+# DS_Store
+.DS_Store
