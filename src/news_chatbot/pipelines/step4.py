@@ -44,6 +44,7 @@ def metadata(batch_query_time: int) -> pd.DataFrame:
             "sentiment",
             "publishedAt",
             "duplicate_count",
+            "url",
         ]
 
         df2 = df[columns]

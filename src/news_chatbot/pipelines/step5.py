@@ -29,6 +29,7 @@ DATA_FOLDER = os.getenv("DATA_FOLDER")
 
 ## INDEX parameters
 QDRANT_URI = os.getenv("QDRANT_URI")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 NUM_DOCS = -1
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
@@ -67,7 +68,7 @@ def build_index(
     collection_name = f"{model_name}-{model_version}"
 
     # client
-    client = QdrantClient(url=QDRANT_URI)
+    client = QdrantClient(url=QDRANT_URI, api_key=QDRANT_API_KEY)
 
     # create two sets of vectors fro hybrid search
     client.create_collection(
@@ -109,6 +110,7 @@ def build_index(
                 "sentiment": row["sentiment"],
                 "topic": row["topic"],
                 "publishedAt": row["publishedAt"].strftime("%Y-%m-%d %H:%M:%S %z"),
+                "url": row["url"],
             },
         )
         for _, row in df.iterrows()

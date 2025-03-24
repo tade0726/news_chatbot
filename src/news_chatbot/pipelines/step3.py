@@ -107,7 +107,7 @@ def high_importance(batch_query_time: int) -> Dict[str, pd.DataFrame]:
 
     for t in topic_keywords.keys():
 
-        df_topic = df[df["topic"].apply(lambda x: t in x)].copy()
+        df_topic = df[df["categories"].apply(lambda x: t in x)].copy()
 
         df_topic.loc[:, f"{t}_rank"] = df_topic[f"{t}_importance"].rank(
             ascending=False, method="min"

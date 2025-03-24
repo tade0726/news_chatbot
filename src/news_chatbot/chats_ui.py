@@ -50,6 +50,7 @@ Instructions for Response:
 7. When appropriate, highlight key facts, figures, or quotes from the articles
 8. ALWAYS include source attribution and article metadata in your responses
 9. ALWAYS include the publication date of articles when referencing information
+10. ALWAYS include article URLs when available in your sources section
 
 Acceptable Topics (Based on Provided Context):
 - Sports: Australian teams, athletes, competitions, and sporting events
@@ -76,11 +77,13 @@ Reference Format:
       - Published: [Date if available]
       - Topic: [Article Category/Topic]
       - Sentiment: [Article Sentiment if available]
+      - URL: [Article URL if available]
    
    2. **[Source Name]** - "[Article Title]"
       - Published: [Date if available]
       - Topic: [Article Category/Topic]
       - Sentiment: [Article Sentiment if available]
+      - URL: [Article URL if available]
 
 3. If the same source has multiple articles, list each article separately with its metadata.
 
@@ -90,6 +93,8 @@ Reference Format:
    - Positive: 😀
    - Neutral: 😐
    - Negative: 😟
+
+6. If an article URL is available, make the article title a clickable link.
 
 Remember: You are helping users understand Australian news across sports, lifestyle, music, and finance categories based solely on the provided article context. Always attribute information to its source and include relevant metadata to establish credibility.
 """
@@ -132,7 +137,8 @@ def initialize_index() -> VectorStoreIndex:
 @st.cache_resource
 def initialize_prompt() -> PromptTemplate:
     """Initialize the custom prompt template."""
-    return PromptTemplate(USER_PROMPT_TEMPLATE)
+    prompt_template = PromptTemplate(USER_PROMPT_TEMPLATE)
+    return prompt_template
 
 
 def rephrase_query_function(client: OpenAI, query: str) -> str:
@@ -256,6 +262,16 @@ def read_highlights() -> str:
     # Get the top 5 rows of each different topic
     df = df.groupby("topic").head(5)
 
+    # Get the most recent publication date to identify new content
+    # Convert publishedAt to datetime if it's not already
+    df["publishedAt"] = pd.to_datetime(df["publishedAt"])
+
+    # Calculate which articles are new (published in the last 24 hours)
+    current_time = pd.Timestamp.now(tz="UTC")
+    df["is_new"] = (
+        current_time - pd.to_datetime(df["publishedAt"])
+    ).dt.total_seconds() < 86400  # 24 hours in seconds
+
     # Generate a markdown string of the highlights with web-like formatting
     markdown = "# 📰 News Hub\n\n"
 
@@ -268,12 +284,18 @@ def read_highlights() -> str:
 
         # Loop through each article in the topic
         for _, row in group.iterrows():
-            # Article headline with formatting
-            markdown += f"### {row['headline']}\n\n"
+            # Article headline with formatting and NEW badge if applicable
+            if row["is_new"]:
+                markdown += f"### {row['headline']} 🆕\n\n"
+            else:
+                markdown += f"### {row['headline']}\n\n"
 
-            # Source and date information
+            # Source and date information with URL if available
             pub_date = pd.to_datetime(row["publishedAt"]).strftime("%Y-%m-%d %H:%M")
-            markdown += f"*Source: **{row['source']}** | Published: {pub_date}*\n\n"
+            if row.get("url") and row["url"]:
+                markdown += f"*Source: **[{row['source']}]({row['url']})** | Published: {pub_date}*\n\n"
+            else:
+                markdown += f"*Source: **{row['source']}** | Published: {pub_date}*\n\n"
 
             # Add sentiment indicator with emoji
             sentiment_emoji = "😐"
@@ -309,6 +331,10 @@ def read_highlights() -> str:
                     markdown += "**Keywords:** "
                     markdown += ", ".join([f"`{kw}`" for kw in row["keywords"]])
                     markdown += "\n\n"
+
+            # Add Read More link if URL is available
+            if row.get("url") and row["url"]:
+                markdown += f"[Read Full Article]({row['url']})\n\n"
 
             # Add a divider between articles
             markdown += "---\n\n"
@@ -469,12 +495,20 @@ if __name__ == "__main__":
                     logger.debug(f"Formatted prompt: {formatted_prompt}")
 
                     with st.spinner("Generating response..."):
+                        # Create a custom system prompt that includes URL instructions
+                        custom_system_prompt = (
+                            SYSTEM_PROMPT
+                            + "\n\nIMPORTANT: If article URLs are available in the context, include them in your response in the Sources section. Make article titles clickable links when possible."
+                        )
+
                         st.session_state.messages.append(
                             {"role": "user", "content": rephrased_query}
                         )
                         stream = client.chat.completions.create(
                             model=st.session_state["openai_model"],
-                            messages=[{"role": "system", "content": SYSTEM_PROMPT}]
+                            messages=[
+                                {"role": "system", "content": custom_system_prompt}
+                            ]
                             + [
                                 {"role": m["role"], "content": m["content"]}
                                 for m in st.session_state.messages
@@ -482,11 +516,10 @@ if __name__ == "__main__":
                             + [{"role": "user", "content": formatted_prompt}],
                             stream=True,
                         )
-
-                    response = st.write_stream(stream)
-                    st.session_state.messages.append(
-                        {"role": "assistant", "content": response}
-                    )
+                        response = st.write_stream(stream)
+                        st.session_state.messages.append(
+                            {"role": "assistant", "content": response}
+                        )
 
     # Tab 2: News Highlights
     with tab2:
