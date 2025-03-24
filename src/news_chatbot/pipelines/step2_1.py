@@ -16,12 +16,7 @@ import pandas as pd
 from zenml import Model, step, pipeline
 
 import json
-from openai import OpenAI
-import time
-
-# Local imports
-from news_chatbot.datasets import DuckdbDataset
-from news_chatbot.openai import process_article_content, SYSTEM_PROMPT
+from news_chatbot.llm import process_article_content, SYSTEM_PROMPT
 
 
 # Model configuration

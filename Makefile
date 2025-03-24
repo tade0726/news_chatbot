@@ -32,4 +32,8 @@ step4:
 
 step5:
 	uv run src/news_chatbot/pipelines/step5.py
-	
+
+
+streamlit:
+	make format
+	uv run streamlit run src/news_chatbot/chats_ui.py

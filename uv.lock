@@ -1844,6 +1844,7 @@ dependencies = [
     { name = "rapidfuzz" },
     { name = "sentence-transformers" },
     { name = "streamlit" },
+    { name = "torch" },
     { name = "transformers", extra = ["torch"] },
     { name = "zenml" },
 ]
@@ -1862,6 +1863,7 @@ requires-dist = [
     { name = "rapidfuzz", specifier = ">=3.12.2" },
     { name = "sentence-transformers", specifier = ">=3.4.1" },
     { name = "streamlit", specifier = ">=1.40.0" },
+    { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", extras = ["torch"], specifier = ">=4.47.0" },
     { name = "zenml", specifier = "==0.80.0" },
 ]

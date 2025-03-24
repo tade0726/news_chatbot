@@ -14,10 +14,6 @@ from typing import List, Dict, Any
 import pandas as pd
 from zenml import Model, step, pipeline
 
-import json
-from openai import OpenAI
-import time
-
 from sentence_transformers import SentenceTransformer
 import numpy as np
 

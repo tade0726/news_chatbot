@@ -19,6 +19,7 @@ dependencies = [
     "rapidfuzz>=3.12.2",
     "faiss-cpu>=1.10.0",
     "sentence-transformers>=3.4.1",
+    "torch>=2.6.0",
 ]
 
 [build-system]

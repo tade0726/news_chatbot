@@ -10,9 +10,6 @@ from zenml import Model, step, pipeline
 import faiss
 
 
-from openai import OpenAI
-import time
-
 # Local imports
 from news_chatbot.datasets import DuckdbDataset
 
