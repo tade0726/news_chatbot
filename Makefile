@@ -18,5 +18,12 @@ freeze:
 step1:
 	uv run src/news_chatbot/pipelines/step1.py
 
-step2:
+step2_1:
 	uv run src/news_chatbot/pipelines/step2_1.py
+
+step2_2:
+	uv run src/news_chatbot/pipelines/step2_2.py
+
+step3:
+	uv run src/news_chatbot/pipelines/step3.py
+	

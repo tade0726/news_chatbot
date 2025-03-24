@@ -16,6 +16,9 @@ dependencies = [
     "transformers[torch]>=4.47.0",
     "duckdb>=1.2.1",
     "newsapi-python>=0.2.7",
+    "rapidfuzz>=3.12.2",
+    "faiss-cpu>=1.10.0",
+    "sentence-transformers>=3.4.1",
 ]
 
 [build-system]
