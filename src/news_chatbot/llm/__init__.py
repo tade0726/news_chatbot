@@ -149,8 +149,6 @@ async def process_items_with_semaphore(
             result = await process_func(
                 client=client, system_prompt=system_prompt, **item_data
             )
-            # Add a small delay to avoid rate limiting
-            await asyncio.sleep(0.2)
             return item_id, result
 
     # Create tasks for all items

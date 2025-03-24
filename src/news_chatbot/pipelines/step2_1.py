@@ -39,7 +39,7 @@ DUCKDB_PATH = os.getenv("DUCKDB_PATH")
 TMP_FOLDER = os.getenv("TMP_FOLDER")
 
 # Concurrency settings
-BATCH_SIZE = 50  # Adjust based on OpenAI rate limits
+MAX_CONCURRENCY = 30
 
 # INPUT_NUM
 INPUT_NUM = -1
@@ -118,29 +118,17 @@ def categories_and_summary(df: pd.DataFrame, batch_query_time: int) -> pd.DataFr
 
     # Define async function to process all batches
     async def process_all_batches():
-        nonlocal all_results
-        # Split items into batches
-        item_ids = list(content_items.keys())
-        for i in range(0, len(item_ids), BATCH_SIZE):
-            batch_ids = item_ids[i : i + BATCH_SIZE]
-            batch_items = {item_id: content_items[item_id] for item_id in batch_ids}
+        nonlocal all_results, content_items, client
 
-            # Process the batch
-            batch_results = await process_items_with_semaphore(
-                batch_items,
-                process_article_content,
-                client,
-                system_prompt=SYSTEM_PROMPT,
-                max_concurrency=5,
-            )
-            all_results.update(batch_results)
-
-            # Add a delay between batches to avoid rate limiting
-            if i + BATCH_SIZE < len(item_ids):
-                print(
-                    f"Processed batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
-                )
-                await asyncio.sleep(1)
+        # Process the batch
+        results = await process_items_with_semaphore(
+            content_items,
+            process_article_content,
+            client,
+            system_prompt=SYSTEM_PROMPT,
+            max_concurrency=MAX_CONCURRENCY,
+        )
+        all_results.update(results)
 
     # Run the async function
     asyncio.run(process_all_batches())
@@ -188,25 +176,15 @@ def embeddings(df: pd.DataFrame, batch_query_time: int) -> pd.DataFrame:
 
     # Define async function to process all batches
     async def process_all_embeddings():
-        nonlocal all_results
-        # Split items into batches
-        item_ids = list(title_items.keys())
-        for i in range(0, len(item_ids), BATCH_SIZE):
-            batch_ids = item_ids[i : i + BATCH_SIZE]
-            batch_items = {item_id: title_items[item_id] for item_id in batch_ids}
-
-            # Process the batch
-            batch_results = await process_items_with_semaphore(
-                batch_items, process_article_embedding, client, max_concurrency=10
-            )
-            all_results.update(batch_results)
-
-            # Add a delay between batches to avoid rate limiting
-            if i + BATCH_SIZE < len(item_ids):
-                print(
-                    f"Processed embeddings batch {i//BATCH_SIZE + 1}/{(len(item_ids) + BATCH_SIZE - 1)//BATCH_SIZE}, waiting before next batch..."
-                )
-                await asyncio.sleep(1)
+        nonlocal all_results, title_items, client
+        # Process the batch
+        results = await process_items_with_semaphore(
+            title_items,
+            process_article_embedding,
+            client,
+            max_concurrency=MAX_CONCURRENCY,
+        )
+        all_results.update(results)
 
     # Run the async function
     asyncio.run(process_all_embeddings())
