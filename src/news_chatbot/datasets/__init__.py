@@ -29,20 +29,38 @@ class DuckdbDataset(Dataset):
         self.overwrite = overwrite
 
     def write_data(self) -> None:
+
         if self.df is None:
             return
+
+        df_to_write = self.df
 
         if self.overwrite:
             with duckdb.connect(self.data_path) as db:
                 db.sql(f"DROP TABLE IF EXISTS {self.table_name}")
+                db.sql(
+                    f"CREATE TABLE IF NOT EXISTS {self.table_name} AS SELECT * FROM df_to_write"
+                )
+        else:
+            # create table if not exists or insert data if it does
+            with duckdb.connect(self.data_path) as db:
 
-        # create table if not exists
-        with duckdb.connect(self.data_path) as db:
-            df_to_write = self.df
-            db.sql(
-                f"CREATE TABLE IF NOT EXISTS {self.table_name} AS SELECT * FROM df_to_write"
-            )
-            db.sql(f"INSERT INTO {self.table_name} SELECT * FROM df_to_write")
+                # Check if table exists
+                table_exists = (
+                    db.sql(
+                        f"SELECT name FROM sqlite_master WHERE type='table' AND name='{self.table_name}'"
+                    ).fetchone()
+                    is not None
+                )
+
+                if not table_exists:
+                    # Create table with data if it doesn't exist
+                    db.sql(
+                        f"CREATE TABLE {self.table_name} AS SELECT * FROM df_to_write"
+                    )
+                else:
+                    # Only insert data if table already exists
+                    db.sql(f"INSERT INTO {self.table_name} SELECT * FROM df_to_write")
 
     def read_data(self) -> pd.DataFrame:
         with duckdb.connect(self.data_path) as db:

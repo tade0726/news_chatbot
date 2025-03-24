@@ -10,8 +10,6 @@ down:
 
 format:
 	black src
-	isort src
-
 
 freeze:
 	uv pip freeze > requirements.txt
